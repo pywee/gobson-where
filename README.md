@@ -6,19 +6,31 @@ This is a Golang code package that converts SQL WHERE condition statements to BS
 
 # 如何使用？
 
-```
+```golang
 go get github.com/pywee/gobson-where
 ```
 
 golang 内引入
-```
+```golang
 import (
-    w github.com/pywee/gobson-where
+    where github.com/pywee/gobson-where
 )
 
 func main() {
-   filter := where.ParseWhere(`sku=123 AND (name=456 OR id=789)`) 
+   filter := where.ParseWhere(`sku!=123 AND (name=456 OR id=789) AND id!=1`) 
    fmt.Println(filter)
 }
 
+```
+
+以上的写法最终将转换为如下结构:
+```
+_ = bson.D{
+    bson.E{Key: "sku", Value: bson.M{"$ne": "123"}},
+    bson.E{Key: "$or", Value: bson.A{
+        bson.D{bson.E{Key: "name", Value: 456}},
+        bson.D{bson.E{Key: "id", Value: 789}},
+    }},
+    bson.E{Key: "id", Value: bson.M{"$ne": 1}},
+}
 ```
