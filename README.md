@@ -23,7 +23,9 @@ func main() {
 
 ```
 
+The above code will eventually be transformed into the following structure:
 以上的写法最终将转换为如下结构:
+
 ```
 _ = bson.D{
     bson.E{Key: "sku", Value: bson.M{"$ne": "123"}},
