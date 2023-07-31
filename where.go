@@ -33,23 +33,32 @@ type opts struct {
 // Parse 解析SQL句子
 // 包含 Where、Limit、Offset 关键字
 func Parse(conditions string) *opts {
-	if len(strings.TrimSpace(conditions)) == 0 {
-		return nil
+	if conditions = strings.TrimSpace(conditions); len(conditions) == 0 {
+		return &opts{}
 	}
 
 	var (
 		k     int8
+		opt   *options.FindOptions
 		where = make(map[string]*bson.D, 1)
 	)
 
+	parseOffsetLimit(&conditions, opt)
+	parseOrder(&conditions, opt)
+
 	conditions = strings.Replace(conditions, " and ", " AND ", -1)
 	conditions = strings.Replace(conditions, " or ", " OR ", -1)
-	str := []rune(conditions)
-	sql := make([]rune, 0, len(str))
 
 	if !strings.Contains(conditions, "deleted") {
-		conditions += ` AND deleted=0 `
+		if len(conditions) == 0 {
+			conditions = `deleted!=1`
+		} else {
+			conditions += ` AND deleted!=1 `
+		}
 	}
+
+	str := []rune(conditions)
+	sql := make([]rune, 0, len(str))
 
 	for i := 0; i < len(str); i++ {
 		if str[i] == '(' {
@@ -79,8 +88,8 @@ func Parse(conditions string) *opts {
 		sql = append(sql, str[i])
 	}
 
+	// fmt.Println(string(sql), "...")
 	// d = append(d, parseAndOr(string(sql))...)
-	opt := parseOffsetLimit(conditions)
 	return &opts{
 		Filter:  parseAndOr(string(sql), where),
 		Options: opt,
