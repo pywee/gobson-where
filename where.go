@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Parse 递归解析括号
@@ -24,9 +25,16 @@ import (
 	}
 */
 
-func Parse(conditions string) bson.D {
+type opts struct {
+	Filter  bson.D
+	Options *options.FindOptions
+}
+
+// Parse 解析SQL句子
+// 包含 Where、Limit、Offset 关键字
+func Parse(conditions string) *opts {
 	if len(strings.TrimSpace(conditions)) == 0 {
-		return bson.D{{}}
+		return nil
 	}
 
 	var (
@@ -59,9 +67,9 @@ func Parse(conditions string) bson.D {
 					i = j
 					// d = append(d, Parse(string(kstr[1:len(kstr)-1]))...)
 					// fmt.Println(string(kstr[1:len(kstr)-1]), "::")
-					tmp := Parse(string(kstr[1 : len(kstr)-1]))
+					opt := Parse(string(kstr[1 : len(kstr)-1]))
 					key := fmt.Sprintf(`$%d`, k)
-					where[key] = &tmp
+					where[key] = &opt.Filter
 					sql = append(sql, []rune(key)...)
 					break
 				}
@@ -71,10 +79,12 @@ func Parse(conditions string) bson.D {
 		sql = append(sql, str[i])
 	}
 
-	// fmt.Println(string(sql))
 	// d = append(d, parseAndOr(string(sql))...)
-
-	return parseAndOr(string(sql), where)
+	opt := parseOffsetLimit(conditions)
+	return &opts{
+		Filter:  parseAndOr(string(sql), where),
+		Options: opt,
+	}
 }
 
 // parseWhereSymbool 解析符号
