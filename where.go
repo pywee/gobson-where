@@ -2,6 +2,7 @@ package where
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,17 +35,17 @@ type opts struct {
 // 包含 Where、Limit、Offset 关键字
 func Parse(conditions string) *opts {
 	if conditions = strings.TrimSpace(conditions); len(conditions) == 0 {
-		return &opts{}
+		conditions = "deleted!=1"
 	}
 
 	var (
 		k     int8
-		opt   *options.FindOptions
 		where = make(map[string]*bson.D, 1)
 	)
 
-	parseOffsetLimit(&conditions, opt)
+	opt := options.Find()
 	parseOrder(&conditions, opt)
+	parseOffsetLimit(&conditions, opt)
 
 	conditions = strings.Replace(conditions, " and ", " AND ", -1)
 	conditions = strings.Replace(conditions, " or ", " OR ", -1)
@@ -76,9 +77,9 @@ func Parse(conditions string) *opts {
 					i = j
 					// d = append(d, Parse(string(kstr[1:len(kstr)-1]))...)
 					// fmt.Println(string(kstr[1:len(kstr)-1]), "::")
-					opt := Parse(string(kstr[1 : len(kstr)-1]))
+					opt2 := Parse(string(kstr[1 : len(kstr)-1]))
 					key := fmt.Sprintf(`$%d`, k)
-					where[key] = &opt.Filter
+					where[key] = &opt2.Filter
 					sql = append(sql, []rune(key)...)
 					break
 				}
@@ -120,15 +121,26 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 	}
 
 	filter = bson.E{
-		Key:   strings.TrimSpace(cds[:idx]),
-		Value: bson.M{syn: strings.TrimSpace(strings.Replace(cds[idx+step:], `"`, "", 2))},
+		Key: strings.TrimSpace(cds[:idx]),
 	}
+
+	value := strings.TrimSpace(cds[idx+step:])
+	if strings.Count(value, `"`) >= 2 {
+		filter.Value = bson.M{syn: strings.TrimSpace(strings.Replace(value, `"`, "", -1))}
+	} else if strings.Contains(value, ".") {
+		valueFloat, _ := strconv.ParseFloat(value, 64)
+		filter.Value = bson.M{syn: valueFloat}
+	} else {
+		valueInt, _ := strconv.ParseInt(value, 10, 64)
+		filter.Value = bson.M{syn: valueInt}
+	}
+
 	return filter
 }
 
 // parseAndOr 递归解析AND/OR
 func parseAndOr(conditions string, where map[string]*bson.D) bson.D {
-	var cs bson.D
+	var cs = bson.D{}
 	if idx := strings.Index(conditions, "OR"); idx != -1 {
 		cs = append(cs, bson.E{
 			Key: "$or",
