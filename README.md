@@ -4,7 +4,7 @@
 This is a Golang code package that converts SQL WHERE condition statements to BSON format. When using MongoDB, we typically use BSON format for filtering conditions. Sometimes, we need to write a large amount of code for this purpose. With this package, you can easily perform conditional queries.
 
 
-# 如何使用？
+### 如何使用？
 
 ```golang
 go get github.com/pywee/gobson-where
@@ -38,7 +38,8 @@ _ = bson.D{
 }
 ```
 
-针对以上的 SQL 语句中的 limit 关键词，内部同时会设定 options.FindOptions 对象
+The SQL statement includes the "LIMIT" keyword, which simultaneously sets the "options.FindOptions" object internally.
+针对以上的 SQL 语句中的 limit 关键词，内部同时会设定 options.FindOptions 对象。
 ```
 limit 0,10 = options.Find().SetSkip(0).SetLimit(10)
 ```
