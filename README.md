@@ -17,8 +17,9 @@ import (
 )
 
 func main() {
-   filter := where.ParseWhere(`sku!=123 AND (name=456 OR id=789) AND id!=1`) 
-   fmt.Println(filter)
+   opt := where.ParseWhere(`sku!=123 AND (name=456 OR id=789) AND id!=1 LIMIT 0,10`) 
+   fmt.Println(opt.Filter)
+   fmt.Println(opt.Options)
 }
 
 ```
@@ -35,4 +36,9 @@ _ = bson.D{
     }},
     bson.E{Key: "id", Value: bson.M{"$ne": 1}},
 }
+```
+
+针对以上的 SQL 语句中的 limit 关键词，内部同时会设定 options.FindOptions 对象
+```
+limit 0,10 = options.Find().SetSkip(0).SetLimit(10)
 ```
