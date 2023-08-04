@@ -2,6 +2,7 @@ package where
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -33,10 +34,22 @@ type opts struct {
 
 // Parse 解析SQL句子
 // 包含 Where、Limit、Offset 关键字
-func Parse(conditions string) *opts {
+func Parse(conditions string, params ...interface{}) *opts {
+	for _, v := range params {
+		if kind := reflect.TypeOf(v).Kind().String(); kind == "string" {
+			conditions = strings.Replace(conditions, "?", `"%s"`, 1)
+		} else if kind == "int64" || kind == "int32" || kind == "int16" || kind == "int8" {
+			conditions = strings.Replace(conditions, "?", `%d`, 1)
+		} else if strings.Contains(kind, "float") {
+			conditions = strings.Replace(conditions, "?", "%f", 1)
+		}
+	}
+
 	if conditions = strings.TrimSpace(conditions); len(conditions) == 0 {
 		conditions = "deleted!=1"
 	}
+
+	conditions = fmt.Sprintf(conditions, params...)
 
 	var (
 		k     int8
