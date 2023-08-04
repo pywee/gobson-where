@@ -38,7 +38,7 @@ func Parse(conditions string, params ...interface{}) *opts {
 	for _, v := range params {
 		if kind := reflect.TypeOf(v).Kind().String(); kind == "string" {
 			conditions = strings.Replace(conditions, "?", `"%s"`, 1)
-		} else if kind == "int64" || kind == "int32" || kind == "int16" || kind == "int8" {
+		} else if strings.Contains(conditions, "int") {
 			conditions = strings.Replace(conditions, "?", `%d`, 1)
 		} else if strings.Contains(kind, "float") {
 			conditions = strings.Replace(conditions, "?", "%f", 1)
@@ -70,6 +70,8 @@ func Parse(conditions string, params ...interface{}) *opts {
 			conditions += ` AND deleted!=1 `
 		}
 	}
+
+	fmt.Println(conditions)
 
 	str := []rune(conditions)
 	sql := make([]rune, 0, len(str))
