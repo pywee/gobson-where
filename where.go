@@ -36,9 +36,10 @@ type opts struct {
 // 包含 Where、Limit、Offset 关键字
 func Parse(conditions string, params ...interface{}) *opts {
 	for _, v := range params {
-		if kind := reflect.TypeOf(v).Kind().String(); kind == "string" {
+		kind := reflect.TypeOf(v).Kind().String()
+		if kind == "string" {
 			conditions = strings.Replace(conditions, "?", `"%s"`, 1)
-		} else if strings.Contains(conditions, "int") {
+		} else if strings.Contains(kind, "int") {
 			conditions = strings.Replace(conditions, "?", `%d`, 1)
 		} else if strings.Contains(kind, "float") {
 			conditions = strings.Replace(conditions, "?", "%f", 1)
@@ -70,8 +71,6 @@ func Parse(conditions string, params ...interface{}) *opts {
 			conditions += ` AND deleted!=1 `
 		}
 	}
-
-	fmt.Println(conditions)
 
 	str := []rune(conditions)
 	sql := make([]rune, 0, len(str))
