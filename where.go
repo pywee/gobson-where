@@ -35,14 +35,21 @@ type opts struct {
 // Parse 解析SQL句子
 // 包含 Where、Limit、Offset 关键字
 func Parse(conditions string, params ...interface{}) *opts {
+	var realParams = make([]interface{}, 0, len(params))
 	for _, v := range params {
+		if !strings.Contains(conditions, "?") {
+			break
+		}
 		kind := reflect.TypeOf(v).Kind().String()
 		if kind == "string" {
 			conditions = strings.Replace(conditions, "?", `"%s"`, 1)
+			realParams = append(realParams, v)
 		} else if strings.Contains(kind, "int") {
 			conditions = strings.Replace(conditions, "?", `%d`, 1)
+			realParams = append(realParams, v)
 		} else if strings.Contains(kind, "float") {
 			conditions = strings.Replace(conditions, "?", "%f", 1)
+			realParams = append(realParams, v)
 		}
 	}
 
@@ -50,8 +57,9 @@ func Parse(conditions string, params ...interface{}) *opts {
 		conditions = "deleted!=1"
 	}
 
-	conditions = fmt.Sprintf(conditions, params...)
-
+	if len(realParams) > 0 {
+		conditions = fmt.Sprintf(conditions, realParams...)
+	}
 	var (
 		k     int8
 		where = make(map[string]*bson.D, 1)
