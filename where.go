@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -142,13 +143,23 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 		syn = "$lt"
 	}
 
+	column := strings.TrimSpace(cds[:idx])
+	if column == "id" {
+		column = "_id"
+	}
 	filter = bson.E{
-		Key: strings.TrimSpace(cds[:idx]),
+		Key: strings.TrimSpace(column),
 	}
 
 	value := strings.TrimSpace(cds[idx+step:])
 	if strings.Count(value, `"`) >= 2 {
-		filter.Value = bson.M{syn: strings.TrimSpace(strings.Replace(value, `"`, "", -1))}
+		thisValue := strings.TrimSpace(strings.Replace(value, `"`, "", -1))
+		if column == "_id" {
+			oid, _ := primitive.ObjectIDFromHex(thisValue)
+			filter.Value = bson.M{syn: oid}
+		} else {
+			filter.Value = bson.M{syn: thisValue}
+		}
 	} else if strings.Contains(value, ".") {
 		valueFloat, _ := strconv.ParseFloat(value, 64)
 		filter.Value = bson.M{syn: valueFloat}
