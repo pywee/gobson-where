@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,6 +27,11 @@ import (
 			bson.D{bson.E{Key: "name", Value: 5}},
 		}},
 	}
+
+	// 用法二，通过时间过滤
+	sql := `updatedAt>? order by updatedAt desc LIMIT 0,10`
+	params:= []interface{}{time.Unix(12345678901, 0)}
+	where.Parse(sql, params...)
 */
 
 type opts struct {
@@ -51,6 +57,9 @@ func Parse(conditions string, params ...interface{}) *opts {
 		} else if strings.Contains(kind, "float") {
 			conditions = strings.Replace(conditions, "?", "%f", 1)
 			realParams = append(realParams, v)
+		} else if reflect.TypeOf(v).Name() == "Time" {
+			conditions = strings.Replace(conditions, "?", "_TIME_%d", 1)
+			realParams = append(realParams, v.(time.Time).Unix())
 		}
 	}
 
@@ -163,6 +172,9 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 	} else if strings.Contains(value, ".") {
 		valueFloat, _ := strconv.ParseFloat(value, 64)
 		filter.Value = bson.M{syn: valueFloat}
+	} else if strings.Contains(value, "_TIME_") {
+		valueInt, _ := strconv.ParseInt(strings.TrimSuffix(value, "_TIME_"), 10, 64)
+		filter.Value = bson.M{syn: time.Unix(valueInt, 0)}
 	} else {
 		valueInt, _ := strconv.ParseInt(value, 10, 64)
 		filter.Value = bson.M{syn: valueInt}
