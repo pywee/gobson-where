@@ -13,13 +13,13 @@ import (
 // 不支持 order by createAt desc, id desc
 func parseOrder(l *string, opt *options.FindOptions) {
 	re1 := regexp.MustCompile(`\s+`)
-	re2 := regexp.MustCompile(`(?i)order by [a-z0-9_]+\s+(desc|asc)`)
+	re2 := regexp.MustCompile(`(?i)order by [0-9a-zA-Z_]+\s+(desc|asc)`)
 	found := strings.TrimSpace(re2.FindString(*l))
 	result := re1.ReplaceAllString(found, " ")
 	*l = strings.TrimSpace(strings.Replace(*l, found, "", -1))
 
 	// fmt.Println(result)
-	// fmt.Println(found)
+	// fmt.Println(found, "xxxxxxxx")
 	// fmt.Println(*l, "...")
 
 	arr := strings.Split(result, " ")
