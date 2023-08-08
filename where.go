@@ -27,11 +27,6 @@ import (
 			bson.D{bson.E{Key: "name", Value: 5}},
 		}},
 	}
-
-	// 用法二，通过时间过滤
-	sql := `updatedAt>? order by updatedAt desc LIMIT 0,10`
-	params:= []interface{}{time.Unix(12345678901, 0)}
-	where.Parse(sql, params...)
 */
 
 type opts struct {
@@ -70,6 +65,8 @@ func Parse(conditions string, params ...interface{}) *opts {
 	if len(realParams) > 0 {
 		conditions = fmt.Sprintf(conditions, realParams...)
 	}
+
+	// fmt.Println(conditions)
 	var (
 		k     int8
 		where = make(map[string]*bson.D, 1)
@@ -173,7 +170,7 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 		valueFloat, _ := strconv.ParseFloat(value, 64)
 		filter.Value = bson.M{syn: valueFloat}
 	} else if strings.Contains(value, "_TIME_") {
-		valueInt, _ := strconv.ParseInt(strings.TrimSuffix(value, "_TIME_"), 10, 64)
+		valueInt, _ := strconv.ParseInt(strings.Replace(value, "_TIME_", "", 1), 10, 64)
 		filter.Value = bson.M{syn: time.Unix(valueInt, 0)}
 	} else {
 		valueInt, _ := strconv.ParseInt(value, 10, 64)
