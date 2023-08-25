@@ -118,8 +118,6 @@ func Parse(conditions string, params ...interface{}) *opts {
 		sql = append(sql, str[i])
 	}
 
-	// fmt.Println(string(sql), "...")
-	// d = append(d, parseAndOr(string(sql))...)
 	return &opts{
 		Filter:  parseAndOr(string(sql), where),
 		Options: opt,
@@ -192,13 +190,27 @@ func parseAndOr(conditions string, where map[string]*bson.D) bson.D {
 			},
 		})
 	} else if idx := strings.Index(conditions, "AND"); idx != -1 {
+		// 两种方式都可以 只是组合出来的结构不同
+		// [{$and [[{warehouse_id map[$eq:64e424cb757faca601355e19]}] [{sku_id map[$eq:64daec3320ec3bbb76831e40]}] [{deleted map[$ne:1]}]]}]
+		arr := strings.Split(conditions, "AND")
+		filters := bson.A{}
+		for _, v := range arr {
+			filters = append(filters, parseAndOr(v, where))
+		}
 		cs = append(cs, bson.E{
-			Key: "$and",
-			Value: bson.A{
-				parseAndOr(strings.TrimSpace(conditions[:idx]), where),
-				parseAndOr(strings.TrimSpace(conditions[idx+3:]), where),
-			},
+			Key:   "$and",
+			Value: filters,
 		})
+
+		// 两种方式都可以 只是组合出来的结构不同
+		// [{$and [[{status map[$eq:1]}] [{$and [[{warehouse_id map[$eq:64dc1f72aa2ab597073b278b]}] [{deleted map[$ne:1]}]]}]]}]
+		// cs = append(cs, bson.E{
+		// Key: "$and",
+		// Value: bson.A{
+		// parseAndOr(strings.TrimSpace(conditions[:idx]), where),
+		// parseAndOr(strings.TrimSpace(conditions[idx+3:]), where),
+		// },
+		// })
 	} else {
 		if strings.Contains(conditions, "$") {
 			cs = append(cs, *(where[conditions])...)
