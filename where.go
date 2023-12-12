@@ -43,7 +43,7 @@ func Parse(conditions string, params ...interface{}) *opts {
 			break
 		}
 		kind := reflect.TypeOf(v).Kind().String()
-		if kind == "string" {
+		if kind == "string" && v != "" {
 			conditions = strings.Replace(conditions, "?", `"%s"`, 1)
 			realParams = append(realParams, v)
 		} else if strings.Contains(kind, "int") {
@@ -66,7 +66,6 @@ func Parse(conditions string, params ...interface{}) *opts {
 		conditions = fmt.Sprintf(conditions, realParams...)
 	}
 
-	// fmt.Println(conditions)
 	var (
 		k     int8
 		where = make(map[string]*bson.D, 1)
@@ -170,6 +169,8 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 	} else if strings.Contains(value, "_TIME_") {
 		valueInt, _ := strconv.ParseInt(strings.Replace(value, "_TIME_", "", 1), 10, 64)
 		filter.Value = bson.M{syn: time.Unix(valueInt, 0)}
+	} else if value == "?" {
+		filter.Value = bson.M{syn: ""}
 	} else {
 		valueInt, _ := strconv.ParseInt(value, 10, 64)
 		filter.Value = bson.M{syn: valueInt}
@@ -190,7 +191,6 @@ func parseAndOr(conditions string, where map[string]*bson.D) bson.D {
 			},
 		})
 	} else if idx := strings.Index(conditions, "AND"); idx != -1 {
-		// 两种方式都可以 只是组合出来的结构不同
 		// [{$and [[{status map[$eq:1]}] [{$and [[{warehouse_id map[$eq:64dc1f72aa2ab597073b278b]}] [{deleted map[$ne:1]}]]}]]}]
 		cs = append(cs, bson.E{
 			Key: "$and",
