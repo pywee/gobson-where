@@ -170,7 +170,10 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 		valueInt, _ := strconv.ParseInt(strings.Replace(value, "_TIME_", "", 1), 10, 64)
 		filter.Value = bson.M{syn: time.Unix(valueInt, 0)}
 	} else if value == "?" {
-		filter.Value = bson.M{syn: ""}
+		// 当字段为 null 时，进入此查询
+		// 如果字段为空，则不会进入，会在字段有过修改的情况下
+		// 无法匹配空字段的数据
+		filter.Value = bson.M{syn: nil}
 	} else {
 		valueInt, _ := strconv.ParseInt(value, 10, 64)
 		filter.Value = bson.M{syn: valueInt}
