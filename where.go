@@ -146,18 +146,22 @@ func parseWhereSymbool(cds string, where map[string]*bson.D) bson.E {
 		syn = "$lt"
 	}
 
+	hexID := false
 	column := strings.TrimSpace(cds[:idx])
-	if column == "id" {
+	if column == "id" || column == "_id" {
 		column = "_id"
+	} else if strings.Contains(column, "_") {
+		hexID = true
+		column = column[1:]
 	}
+
 	filter = bson.E{
 		Key: strings.TrimSpace(column),
 	}
-
 	value := strings.TrimSpace(cds[idx+step:])
 	if strings.Count(value, `"`) >= 2 {
 		thisValue := strings.TrimSpace(strings.Replace(value, `"`, "", -1))
-		if column == "_id" {
+		if column == "_id" || hexID {
 			oid, _ := primitive.ObjectIDFromHex(thisValue)
 			filter.Value = bson.M{syn: oid}
 		} else {
